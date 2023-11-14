@@ -1,0 +1,100 @@
+import tkinter as tk
+from tkinter import messagebox
+
+class Movie:
+    def __init__(self, title, genre, release_date, rows, seats_per_row):
+        self.title = title
+        self.genre = genre
+        self.release_date = release_date
+        self.theater = Theater(rows, seats_per_row)
+
+class Theater:
+    def __init__(self, rows, seats_per_row):
+        self.seats = [['O' for _ in range(seats_per_row)] for _ in range(rows)]
+
+    def reserve_seat(self, row, seat):
+        if self.seats[row - 1][seat - 1] == 'O':
+            self.seats[row - 1][seat - 1] = 'X'
+            return True
+        else:
+            return False
+
+# Tkinter Interface
+class MovieTheaterApp:
+    def __init__(self, master):
+        self.master = master
+        self.master.title("Movie Theater App")
+
+        self.movies = [
+            Movie("Inception", "Sci-Fi", "2010-07-16", rows=5, seats_per_row=10),
+            Movie("The Shawshank Redemption", "Drama", "1994-09-23", rows=6, seats_per_row=8),
+            Movie("The Matrix", "Action", "1999-03-31", rows=4, seats_per_row=12),
+        ]
+
+        self.selected_movie = None
+
+        self.movie_label = tk.Label(master, text="Available Movies:")
+        self.movie_label.pack()
+
+        self.movies_listbox = tk.Listbox(master, selectmode=tk.SINGLE)
+        for movie in self.movies:
+            self.movies_listbox.insert(tk.END, f"{movie.title} - {movie.genre}")
+        self.movies_listbox.pack()
+
+        self.movies_listbox.bind("<<ListboxSelect>>", self.movie_selection_changed)
+
+        self.reserve_button = tk.Button(master, text="Reserve Seat", command=self.reserve_seat, state=tk.DISABLED)
+        self.reserve_button.pack()
+
+        self.seating_label = tk.Label(master, text="Seating Arrangement:")
+        self.seating_label.pack()
+
+        self.seating_text = tk.Text(master, height=5, width=30, state=tk.DISABLED)
+        self.seating_text.pack()
+
+        self.row_entry = tk.Entry(master)
+        self.seat_entry = tk.Entry(master)
+
+        self.row_label = tk.Label(master, text="Enter the row number:")
+        self.row_label.pack()
+        self.row_entry.pack()
+
+        self.seat_label = tk.Label(master, text="Enter the seat number:")
+        self.seat_label.pack()
+        self.seat_entry.pack()
+
+    def display_seating(self):
+        self.seating_text.config(state=tk.NORMAL)
+        self.seating_text.delete(1.0, tk.END)
+        for row in self.selected_movie.theater.seats:
+            self.seating_text.insert(tk.END, ' '.join(row) + '\n')
+        self.seating_text.config(state=tk.DISABLED)
+
+    def movie_selection_changed(self, event):
+        selected_movie_index = self.movies_listbox.curselection()
+        if selected_movie_index:
+            self.selected_movie = self.movies[selected_movie_index[0]]
+            self.reserve_button.config(state=tk.NORMAL)
+            self.display_seating()
+
+    def reserve_seat(self):
+        try:
+            row = int(self.row_entry.get())
+            seat = int(self.seat_entry.get())
+        except ValueError:
+            messagebox.showwarning("Invalid Input", "Please enter valid row and seat numbers.")
+            return
+
+        if 1 <= row <= len(self.selected_movie.theater.seats) and 1 <= seat <= len(self.selected_movie.theater.seats[0]):
+            if self.selected_movie.theater.reserve_seat(row, seat):
+                messagebox.showinfo("Success", f"Seat reserved for {self.selected_movie.title}.")
+                self.display_seating()
+            else:
+                messagebox.showinfo("Sold Out", "Sorry, the selected seat is already reserved.")
+        else:
+            messagebox.showwarning("Invalid Input", "Invalid row or seat number. Please try again.")
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = MovieTheaterApp(root)
+    root.mainloop()
